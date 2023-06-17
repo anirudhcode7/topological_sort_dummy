@@ -1,26 +1,51 @@
 import os
 import json
 from xml.etree import ElementTree as ET
+import subprocess
+
+
+def extract_xpath_value(pom_file, xpath_expression):
+    command = ['./sh/extract_xpath_value.sh', pom_file, xpath_expression]
+    output = subprocess.check_output(command, universal_newlines=True)
+    return output.strip()
 
 
 def parse_pom_artifacts(pom_file):
     artifacts = []
-
-    try:
-        tree = ET.parse(pom_file)
-        root = tree.getroot()
-        build_element = root.find("./build")
-        if build_element is not None:
-            plugins_element = build_element.find("./plugins")
-            if plugins_element is not None:
-                for plugin_element in plugins_element.findall("./plugin"):
-                    artifact_id_element = plugin_element.find("./artifactId")
-                    if artifact_id_element is not None:
-                        artifacts.append(artifact_id_element.text.strip())
-    except (ET.ParseError, IOError):
-        pass
-
+    xpath_expression = "./ns:project/ns:artifactId"
+    artifactId = extract_xpath_value(pom_file, xpath_expression)
+    if artifactId is not None:
+        artifacts.append(artifactId)
     return artifacts
+
+
+def parse_all_pom_artifacts(folder_path):
+    artifacts_per_project = {}
+    for project_name in os.listdir(folder_path):
+        project_path = os.path.join(folder_path, project_name)
+        if project_name not in artifacts_per_project.keys():
+            artifacts_per_project[project_name] = []
+        if os.path.isdir(project_path):
+            pom_file = os.path.join(project_path, "pom.xml")
+            if os.path.isfile(pom_file):
+                artifacts = parse_pom_artifacts(pom_file)
+                artifacts_per_project[project_name].extend(artifacts)
+
+            for sub_directory_name in os.listdir(project_path):
+                sub_directory_path = os.path.join(project_path, sub_directory_name)
+                if os.path.isdir(sub_directory_path):
+                    pom_file = os.path.join(sub_directory_path, "pom.xml")
+                    if os.path.isfile(pom_file):
+                        artifacts = parse_pom_artifacts(pom_file)
+                        artifacts_per_project[project_name].extend(artifacts)
+    return artifacts_per_project
+
+def parse_pom_dependencies(pom_file):
+    command = ['./sh/extract_internal_dependencies.sh', pom_file]
+    output = subprocess.check_output(command, universal_newlines=True)
+    dependencies = output.strip().split('\n')
+    return dependencies
+
 
 
 def find_projects(folder_path):
@@ -77,14 +102,20 @@ def read_projects_from_json(json_file_path):
 
 
 clone_dir = os.path.abspath("/home/anirudh.ponna/git/test/cloned_projects_full")
-print(clone_dir)
 
 # Find projects in the folder
-projects = find_projects(clone_dir)
+# projects = find_projects(clone_dir)
+
+# artifacts = parse_all_pom_artifacts(clone_dir)
+
+dependencies = parse_pom_dependencies('/home/anirudh.ponna/git/test/cloned_projects_full/avx_scheduler/crontab-mgmt/pom.xml')
+print(dependencies)
 
 # Dump projects to a JSON file
 json_file_path = "./projects.json"
-dump_projects_to_json(projects, json_file_path)
+json_artifact_path = "./artifacts.json"
+# dump_projects_to_json(projects, json_file_path)
+# dump_projects_to_json(artifacts, json_artifact_path)
 
 # Read projects from the JSON file
 projects = read_projects_from_json(json_file_path)
