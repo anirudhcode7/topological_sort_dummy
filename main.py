@@ -282,7 +282,6 @@ if __name__ == "__main__":
     projects = find_projects(clone_dir, build_hierarchy_projects)
 
     artifacts, dependencies = parse_all_artifacts_and_dependencies(clone_dir, build_hierarchy_projects)
-    project_to_project = build_order(artifacts, dependencies)
     # dependencies = parse_pom_dependencies(
     #     '/home/anirudh.ponna/git/test/cloned_projects_full/avx_scheduler/crontab-mgmt/pom.xml')
     # print(dependencies)
@@ -296,6 +295,8 @@ if __name__ == "__main__":
     dump_projects_to_json(projects, json_file_path)
     dump_projects_to_json(artifacts, json_artifact_path)
     dump_projects_to_json(dependencies, json_dependencies_path)
+
+    project_to_project = build_order(artifacts, dependencies)
 
     print("Artifacts length:", len(artifacts))
     print("Dependencies length:", len(dependencies))
