@@ -117,6 +117,67 @@ def build_order(artifacts_per_project, dependencies_per_project):
     return levels_to_project
 
 
+
+def build_order_check(artifacts_per_project, dependencies_per_project):
+    # Create a reverse mapping of artifacts to projects
+    artifact_to_project = {}
+    for project, artifacts in artifacts_per_project.items():
+        for artifact in artifacts:
+            artifact_to_project[artifact] = project
+
+    change_to_list_and_dump_to_json(artifact_to_project, './artifacts_to_project.json')
+    adjacency_list = {}
+    for project, dependencies in dependencies_per_project.items():
+        adjacency_list[project] = set()
+        for dependency in dependencies:
+            if dependency != project and dependency in artifact_to_project:
+                adjacency_list[project].add(artifact_to_project[dependency])
+
+    adjacency_list = remove_self_dependencies(adjacency_list)
+    change_to_list_and_dump_to_json(adjacency_list, './project_to_project.json')
+
+    # Initialize a dictionary to store the levels of each project
+    project_to_levels = {}
+    levels_to_project = {}
+    level = 1
+    path = []  # Track the path while performing topological sorting
+
+    def topological_sort(project):
+        nonlocal level, path
+
+        if project in path:
+            cycle_start = path.index(project)
+            cyclic_path = path[cycle_start:]
+            raise Exception(f"Dependency cycle detected: {cyclic_path}")
+
+        path.append(project)
+
+        dependencies = adjacency_list.get(project, set())
+        for dependency in dependencies:
+            topological_sort(dependency)
+
+        path.pop()
+
+        if project not in project_to_levels:
+            project_to_levels[project] = level
+            if level not in levels_to_project:
+                levels_to_project[level] = []
+            levels_to_project[level].append(project)
+
+        level += 1
+
+    try:
+        # Perform topological sorting for each project
+        for project in adjacency_list.keys():
+            topological_sort(project)
+    except Exception as e:
+        print(e)
+        return None
+
+    change_to_list_and_dump_to_json(levels_to_project, "./levels_to_project.json")
+    return levels_to_project
+
+
 def extract_xpath_value(pom_file, xpath_expression):
     command = ['./sh/extract_xpath_value.sh', pom_file, xpath_expression]
     output = subprocess.check_output(command, universal_newlines=True)
@@ -296,7 +357,7 @@ if __name__ == "__main__":
     dump_projects_to_json(artifacts, json_artifact_path)
     dump_projects_to_json(dependencies, json_dependencies_path)
 
-    project_to_project = build_order(artifacts, dependencies)
+    project_to_project = build_order_check(artifacts, dependencies)
 
     print("Artifacts length:", len(artifacts))
     print("Dependencies length:", len(dependencies))
