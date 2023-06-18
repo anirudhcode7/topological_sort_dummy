@@ -9,6 +9,13 @@ from sqlalchemy import create_engine, text, insert
 
 # from db.src.postgres.common.sqlAlchemy import SQLAlchemyProcessor as PostgresProcessor
 
+def export_env_variables():
+    # Define the path to your shell script
+    script_path = "./sh/export_env_variables.sh"
+
+    # Execute the shell script
+    subprocess.call(script_path)
+
 
 def connect_to_db():
     dbUserName = os.environ.get('dbUserName')
@@ -266,6 +273,7 @@ def read_projects_from_json(json_file_path):
 
 
 if __name__ == "__main__":
+    export_env_variables()
     sqlp = connect_to_db()
     build_hierarchy_projects = get_build_hierarchy(sqlp)
     clone_dir = os.path.abspath("/home/anirudh.ponna/git/test/cloned_projects_full")
