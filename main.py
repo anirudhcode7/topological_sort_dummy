@@ -29,7 +29,8 @@ def getResultsFromSQL(sqlp, sqlQuery):
 
 
 def get_build_hierarchy(sqlp):
-    sql_query = "select git_repo_name from release_build_hierarchy where release_collection_id=1"
+    sql_query = "select git_repo_name from release_build_hierarchy where release_collection_id=1 and git_repo_name " \
+                "not in (select git_repo_name from git_repos where is_builder)"
     projects = getResultsFromSQL(sqlp, sql_query)
     projects = [result[0] for result in projects]
     return projects
@@ -78,7 +79,7 @@ def build_order(artifacts_per_project, dependencies_per_project):
     # Initialize a dictionary to store the levels of each project
     project_to_levels = {}
     levels_to_project = {}
-    level = 0
+    level = 1
 
     # Perform topological sorting
     while adjacency_list:
@@ -280,15 +281,13 @@ if __name__ == "__main__":
 
     # Dump projects to a JSON file
     json_file_path = "./projects.json"
-    json_artifact_path = "./artifacts.json"
-    json_dependencies_path = "./dependencies.json"
+    json_artifact_path = "./project_to_artifacts.json"
+    json_dependencies_path = "./project_to_dependencies.json"
     json_artifacts_to_project = "./artifacts_to_project.json"
     json_project_to_project = "./project_to_project.json"
     dump_projects_to_json(projects, json_file_path)
     dump_projects_to_json(artifacts, json_artifact_path)
     dump_projects_to_json(dependencies, json_dependencies_path)
-    # dump_projects_to_json(artifacts_to_project, json_artifacts_to_project)
-    dump_projects_to_json(project_to_project, json_project_to_project)
 
     print("Artifacts length:", len(artifacts))
     print("Dependencies length:", len(dependencies))
