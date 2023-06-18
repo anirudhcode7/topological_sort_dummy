@@ -263,7 +263,7 @@ def find_projects(folder_path, build_hierarchy_projects):
 
 def dump_projects_to_json(projects, json_file_path):
     with open(json_file_path, "w") as f:
-        json.dump(projects, f, indent=4)
+        json.dump(projects, f, indent=4, sort_keys=True)
 
 
 def read_projects_from_json(json_file_path):
